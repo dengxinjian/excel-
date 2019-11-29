@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>文件邮箱地址识别导出</title>
+</head>
+<style type="text/css">
+	body {
+		height: 100vh;
+		background: url(img/bg.jpg) no-repeat center;
+		background-size: cover;
+	}
+	@font-face {
+		font-family: diyFont;
+		src:url('font/沐瑶软笔手写体.ttf');
+	}
+	h1 {
+		background: url('https://www.17sucai.com/preview/776331/2019-07-28/asw/img/giphy.gif');
+		background-position: top left;
+		background-size: contain;
+		-webkit-background-clip:text;
+		color:transparent;
+		text-align: center;
+		font-size: 42px;
+		font-family: diyFont;
+	}
+	.tips {
+		text-align: center;
+		font-size: 18px;
+		font-family: diyFont;
+	}
+	.click {
+		display: none;
+		position: relative;
+		width:200px;
+		margin: 20px auto;
+		font-size: 0;
+	}
+	.click img {
+		width: 100%;
+	}
+	#upload {
+		position: absolute;
+		left: 0;
+		top: 0;
+		background: transparent;
+		width:100%;
+		height: 100%;
+		font-size: 0;
+	}
+</style>
+<body>
+	<h1>EXCEL文件邮箱地址提取导出</h1>
+	<div class="tips">等一下，页面还没有加载完……</div>
+	<div class="click">
+		<img src="img/click.jpg">
+		<input id="upload" type="file" name="file" multiple>
+	</div>
+</body>
+<script type="text/javascript" src="./js/jquery.min.js"></script>
+<script type="text/javascript" src="./js/xlsx.core.min.js"></script>
+<script type="text/javascript" src="./js/xlsx.full.min.js"></script>
+<script type="text/javascript">
+	window.onload = function() {
+		$('.tips').css('display', 'none');
+		$('.click').css('display', 'block');
+		var allEmail = [['邮箱']]
+		$('#upload').change(function(e){
+			Array.from(e.currentTarget.files).forEach(function(item){
+				var title = '邮件地址-' + item.name
+				var selectedFile = item
+				var reader = new FileReader()
+				reader.onload = function(e) {
+					var data = e.target.result
+					var workbook = XLSX.read(data, {type: 'binary'});
+					for (var i = 0;i<workbook.Strings.length; i++) {
+						for(var item in workbook.Strings[i]){
+							if(workbook.Strings[i][item].indexOf('@') != -1 && workbook.Strings[i][item].indexOf('<') == -1)  {
+								allEmail.push([workbook.Strings[i][item]])
+							}
+						}
+					}
+					var sheet = XLSX.utils.aoa_to_sheet(allEmail)
+					openDownloadDialog(sheet2blob(sheet), title);
+				}
+				reader.readAsBinaryString(selectedFile);
+
+			})
+
+		})
+
+		function openDownloadDialog(url, saveName)
+		{
+		    if(typeof url == 'object' && url instanceof Blob)
+		    {
+		        url = URL.createObjectURL(url); // 创建blob地址
+		    }
+		    var aLink = document.createElement('a');
+		    aLink.href = url;
+		    aLink.download = saveName || ''; // HTML5新增的属性，指定保存文件名，可以不要后缀，注意，file:///模式下不会生效
+		    var event;
+		    if(window.MouseEvent) event = new MouseEvent('click');
+		    else
+		    {
+		        event = document.createEvent('MouseEvents');
+		        event.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+		    }
+		    aLink.dispatchEvent(event);
+		}
+
+		// 将一个sheet转成最终的excel文件的blob对象，然后利用URL.createObjectURL下载
+		function sheet2blob(sheet, sheetName) {
+		    sheetName = sheetName || 'sheet1';
+		    var workbook = {
+		        SheetNames: [sheetName],
+		        Sheets: {}
+		    };
+		    workbook.Sheets[sheetName] = sheet;
+		    // 生成excel的配置项
+		    var wopts = {
+		        bookType: 'xlsx', // 要生成的文件类型
+		        bookSST: false, // 是否生成Shared String Table，官方解释是，如果开启生成速度会下降，但在低版本IOS设备上有更好的兼容性
+		        type: 'binary'
+		    };
+		    var wbout = XLSX.write(workbook, wopts);
+		    var blob = new Blob([s2ab(wbout)], {type:"application/octet-stream"});
+		    // 字符串转ArrayBuffer
+		    function s2ab(s) {
+		        var buf = new ArrayBuffer(s.length);
+		        var view = new Uint8Array(buf);
+		        for (var i=0; i!=s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+		        return buf;
+		    }
+		    return blob;
+		}
+	}
+	
+</script>
+</html>
